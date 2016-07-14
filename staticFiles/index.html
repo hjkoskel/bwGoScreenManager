@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <title>Web interface</title>
+    <script src="react.js"></script>
+    <script src="react-dom.js"></script>
+    <script src="browser.min.js"></script>
+    <script src="prefixfree.min.js"></script>    
+</head>
+<body>
+    <h1>Web interface</h1>    
+    <div id="juuridiv"></div>
+    
+    <script type="text/babel">
+        
+        function ajaxPOST(url,data){
+            var request = new XMLHttpRequest();
+            request.open('POST', url, true);
+            request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+            request.send(data);
+        }
+    
+        var ScreenSim=React.createClass({
+            
+            getInitialState:function(){
+                return {t:new Date().getTime()}
+            },
+            componentDidMount: function(){
+                 setInterval(this.updatePic, 200);
+            },
+            updatePic:function(){
+                console.log("Paivittaa "+JSON.stringify(new Date().getTime()))
+                this.setState({t:new Date().getTime()})
+                this.forceUpdate()
+            },
+            render:function(){
+                var picname="screen.png?t="+this.state.t
+                
+                return <img src={picname}/>
+            }
+        })
+        
+        /*
+        Simulates 4x4 keyboard
+        props:
+            keys, array of keys on keyboard (length=16)
+            usekeys, list of keys in use
+        */
+        var Keyboard4x4=React.createClass({
+            
+            postKeyPress:function(key){
+                ajaxGET("key?key="+key)
+                
+            },
+            
+            render:function(){
+                //keys_default=["1","2","3","C","4","5","6","D","7","8","9","E","A","0","B","F"]
+                console.log("KEYBOARD RENDER  keys="+JSON.stringify(this.props.keys)+"  usekeys="+JSON.stringify(this.props.usekeys))    
+                var tablerows=[]
+                for(var row=0;row<4;row++){
+                    var tablecols=[]
+                    for(var col=0;col<4;col++){
+                        var k=this.props.keys[row*4+col]
+                        var dis=this.props.usekeys.indexOf(k)<0
+                        var klikki=this.postKeyPress.bind(this,k)
+                        var txt=k
+                        switch(k){
+                            case "\n":
+                                txt="NEWLINE";break;
+                            case "\t":
+                                txt="TAB";break;
+                            case " ":
+                                txt="SPACE";break;
+
+                        }
+                        
+                        tablecols.push(<td key={col}><button onClick={klikki} disabled={dis}>{txt}</button></td>)
+                    }
+                    tablerows.push(<tr key={row}>{tablecols}</tr>)
+                }
+                
+                
+                return(
+                    <div ClassName="Keyboard4x4">
+                        <table border>
+                        <tbody>
+                            {tablerows}
+                        </tbody>
+                        </table>
+                    </div>
+                )
+            }
+        })
+        
+        function ajaxGET(url,fGotData){
+            var request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.onload = function() {
+                if(this.status>=200 && this.status<400){
+                    //var data = JSON.parse(this.response);
+                    if(fGotData!=undefined){
+                        fGotData(JSON.parse(this.response));
+                    }
+                }else{
+                    // We reached our target server, but it returned an error
+                }
+            };
+            request.onerror = function() {
+                // There was a connection error of some sort
+            };
+            request.send();
+        }
+        
+        var KeyboardSim=React.createClass({
+            postKeyPress:function(key){
+                console.log("TODO KEY PRESSED "+key)
+                ajaxGET("key?key="+key)
+            },
+            render:function(){
+                /*
+                keys_cmd=
+                CMDKEY_LEFTKEYB=0
+                CMDKEY_RIGHTKEYB=1
+                CMDKEY_MATH=2
+                CMDKEY_SYMB=3
+                
+                CMDKEY_ONOFF=4 //ONE CLICK
+                CMDKEY_SHIFT=5
+                CMDKEY_GREEK=6
+                CMDKEY_SCROLL=7
+                
+                CMDKEY_DEL=8 //ONE CLICK
+                CMDKEY_EXIT=9 //ONE CLICK
+                CMDKEY_HELP=10 //ONE CLICK
+                CMDKEY_FKEYS=11
+                
+                CMDKEY_BKSP=12 //ONE CLICK
+                CMDKEY_TAB=13 //ONE CLICK
+                CMDKEY_SPACE=14 //ONE CLICK
+                CMDKEY_ENTER=15  //ONE CLICK
+                */
+                var keys_default=["1","2","3","C","4","5","6","D","7","8","9","E","A","0","B","F"];
+                var keys_leftkeyb=["m","b","w","h","p"," ","x","c","r","y","s","z","d","n","f","v"];
+                var keys_rightkeyb=["g","t","o","j","i","e"," ","u","k","a","l","q","ö","ä","ü","ß"];
+                var keys_math=["+","-","*","/","<",">","(",")","[","]","{","}","|","&","^","!"];
+                var keys_symb=["?",";",":","=","@",",",".","~","\\","%","#","$","_","\"","'","EUR"];
+                var keys_scroll=["LEFT","UP","RIGHT","PGUP","HOME","DOWN","END","PGDOWN","Zout","Zin","Threshold+","Threshold-"];
+                var keys_fkeys=["F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12","CONT-","CONT+","VOL-","VOL+"];
+                
+                var testActiveKeys=["2","A","5","ENTER"]
+                
+                var klikki=this.postKeyPress.bind(this,"")
+                
+                var onKeyUse_left=this.postKeyPress.bind(this,"LEFT")
+                var onKeyUse_right=this.postKeyPress.bind(this,"RIGHT")
+                var onKeyUse_math=this.postKeyPress.bind(this,"")
+                var onKeyUse_symb=this.postKeyPress.bind(this,"")
+                var click_onOff=this.postKeyPress.bind(this,"ONOFF")
+                var onKeyUse_GREEK=this.postKeyPress.bind(this,"")
+                var onKeyUse_SCROLL=this.postKeyPress.bind(this,"")
+                var click_del=this.postKeyPress.bind(this,"del")
+                var click_exit=this.postKeyPress.bind(this,"EXIT")
+                var click_help=this.postKeyPress.bind(this,"help")
+                var onKeyUse_fkeys=this.postKeyPress.bind(this,"")
+                var click_bksp=this.postKeyPress.bind(this,"BKSP")
+                var click_tab=this.postKeyPress.bind(this,"TAB")
+                var click_SPACE=this.postKeyPress.bind(this," ")
+                var click_ENTER=this.postKeyPress.bind(this,"ENTER")
+                
+                
+                
+                return(
+                    <div className={KeyboardSim}>
+                    
+                    <h2>Command keyboard</h2>
+                    <table>
+                        <tbody>
+                        <tr>
+                            <td><button onClick={onKeyUse_left}>USE:LEFT</button></td>
+                            <td><button onClick={onKeyUse_right}>USE:RIGHT</button></td>
+                            <td><button onClick={onKeyUse_math}>USE:MATH</button></td>
+                            <td><button onClick={onKeyUse_symb}>USE:SYMB</button></td>
+                        </tr>
+                        <tr>
+                            <td><button onClick={click_onOff}>ON/OFF</button></td>
+                            <td>SHIFT todo checkbox</td>
+                            <td><button onClick={onKeyUse_GREEK}>USE:GREEK</button></td>
+                            <td><button onClick={onKeyUse_SCROLL}>USE:SCROLL</button></td>
+                        </tr>
+                        <tr>
+                            <td><button onClick={click_del}>DEL</button></td>
+                            <td><button onClick={click_exit}>EXIT</button></td>
+                            <td><button onClick={click_help}>HELP</button></td>                            
+                            <td><button onClick={onKeyUse_fkeys}>USE:FKEYS</button></td>
+                        </tr>
+                        <tr>
+                            <td><button onClick={click_bksp}>BKSP</button></td>
+                            <td><button onClick={click_tab}>TAB</button></td>
+                            <td><button onClick={click_SPACE}>SPACE</button></td>
+                            <td><button onClick={click_ENTER}>ENTER</button></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <h2>One click shortcuts</h2>
+                        <table>
+                        <tbody>
+                        <tr><th>Default</th><th>KALQ-left</th><th>KALQ-right</th><th>Math</th></tr>
+                        
+                        <tr>
+                            <td><Keyboard4x4 keys={keys_default} usekeys={testActiveKeys}/></td>
+                            <td><Keyboard4x4 keys={keys_leftkeyb} usekeys={testActiveKeys}/></td>
+                            <td><Keyboard4x4 keys={keys_rightkeyb} usekeys={testActiveKeys}/></td>
+                            <td><Keyboard4x4 keys={keys_math} usekeys={testActiveKeys}/></td>
+                        </tr>
+                        
+                        <tr><th>Symb</th><th>Scroll</th><th>Fkeys</th></tr>
+                        <tr>
+                            <td><Keyboard4x4 keys={keys_symb} usekeys={testActiveKeys}/></td>
+                            <td><Keyboard4x4 keys={keys_scroll} usekeys={testActiveKeys}/></td>
+                            <td><Keyboard4x4 keys={keys_fkeys} usekeys={testActiveKeys}/></td>
+                        </tr>
+                        </tbody>
+                        </table>
+                    </div>
+                )
+            }
+        })
+
+        
+        var ScreenManagerWebUI=React.createClass({
+            getInitialState:function(){
+                return {keylist:[]}
+            },
+            render:function(){
+                //TODO SHIFT upper
+    
+                            
+                return(
+                    <div className="ScreenManagerWebUI">
+                        <ScreenSim/>
+                        
+                        <KeyboardSim keylist={this.state.keylist}/>
+                    </div>
+                )
+            }
+        })
+    
+    
+    
+        var connectWS=function(){
+            var ip=location.hostname!=""?location.hostname:"192.168.1.101";
+
+            var gate=location.port!=""?location.port:"80";
+            var socket = new WebSocket("ws://"+ip+":"+gate+"/ws");
+            socket.onopen = function(evt) {
+                console.log("WS: open");
+            };
+            socket.onclose = function(evt){
+                ractive.set("wsConnection",false);
+                console.log("WS:closed...re try connection");
+                setTimeout(connectWS,1500);
+            };
+            socket.onerror = function(evt) { console.log("WS: error"); };
+            socket.onmessage = function(evt) {
+                var obj=JSON.parse(evt.data)
+                console.log("GOT MESSAGE "+JSON.strigify(obj))
+            }
+        }
+        
+        //connectWS();
+        ReactDOM.render(<ScreenManagerWebUI />,document.getElementById('juuridiv'));
+        
+    </script>
+</body>
+    
